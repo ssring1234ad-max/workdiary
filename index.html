@@ -764,7 +764,7 @@ function addWork(){
   const end=document.getElementById('w-end').value;
   const cat=document.getElementById('w-cat').value;
   const content=document.getElementById('w-content').value.trim();
-  if(!date||!start||!end||!content){toast('모든 항목을 입력해주세요');return;}
+  if(!date||!start||!end){toast('날짜와 시간을 입력해주세요');return;}
   const mins=calcMins(start,end);
   if(mins<=0){toast('종료 시간이 시작보다 늦어야 해요');return;}
   const rec={id:Date.now(),date,start,end,duration:mins,category:cat,content};

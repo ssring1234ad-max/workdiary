@@ -578,7 +578,7 @@ function calcMins(s,e){
   const d=(eh*60+em)-(sh*60+sm); return d>0?d:0;
 }
 function fmtM(m){ const h=Math.floor(m/60),mm=m%60; if(!h)return`${mm}m`; if(!mm)return`${h}h`; return`${h}h ${mm}m`; }
-function fmtMoney(n){ if(!n)return'0'; if(Math.abs(n)>=100000000)return(n/100000000).toFixed(1)+'억'; if(Math.abs(n)>=10000)return Math.round(n/10000).toLocaleString()+'만'; return n.toLocaleString(); }
+function fmtMoney(n){ return (n||0).toLocaleString()+'원'; }
 function fmtMoneyFull(n){ return (n||0).toLocaleString()+'원'; }
 function escH(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
 
@@ -982,8 +982,8 @@ function renderSales(d,year,month){
   let html=`
     <div class="section-title">${label} 요약</div>
     <div class="sales-summary">
-      <div class="stat-mini"><div class="stat-mini-label">총 매출</div><div class="stat-mini-val" style="color:var(--accent);">${fmtMoney(d.total.revenue)}원</div></div>
-      <div class="stat-mini"><div class="stat-mini-label">총 순익</div><div class="stat-mini-val" style="color:var(--green);">${fmtMoney(d.total.profit)}원</div></div>
+      <div class="stat-mini"><div class="stat-mini-label">총 매출</div><div class="stat-mini-val" style="color:var(--accent);font-size:18px;">${fmtMoneyFull(d.total.revenue)}</div></div>
+      <div class="stat-mini"><div class="stat-mini-label">총 순익</div><div class="stat-mini-val" style="color:var(--green);font-size:18px;">${fmtMoneyFull(d.total.profit)}</div></div>
       <div class="stat-mini"><div class="stat-mini-label">수익률</div><div class="stat-mini-val">${marginAvg}%</div></div>
       <div class="stat-mini"><div class="stat-mini-label">거래건수</div><div class="stat-mini-val">${d.total.count.toLocaleString()}건</div></div>
     </div>`;
@@ -997,10 +997,10 @@ function renderSales(d,year,month){
     html+=`<div class="company-bar">
       <div class="company-bar-top">
         <span class="company-bar-name" style="color:${color};">${name.replace('아이리','')}</span>
-        <span class="company-bar-val">${fmtMoney(v.revenue)}원</span>
+        <span class="company-bar-val">${fmtMoneyFull(v.revenue)}</span>
       </div>
       <div class="bar-track"><div class="bar-fill" style="width:${(v.revenue/maxRev*100).toFixed(1)}%;background:${color};"></div></div>
-      <div style="font-size:12px;color:var(--text3);margin-top:3px;">순익 ${fmtMoney(v.profit)}원 · ${mg}% · ${v.count}건</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:3px;">순익 ${fmtMoneyFull(v.profit)} · ${mg}% · ${v.count}건</div>
     </div>`;
   });
   html+=`</div>`;
@@ -1019,7 +1019,7 @@ function renderSales(d,year,month){
           <span style="font-size:13px;font-weight:700;color:${PCOLS[i%PCOLS.length]};">${Math.round(v.revenue/totalRev*100)}%</span>
         </div>
         <div class="bar-track"><div class="bar-fill" style="width:${(v.revenue/maxP*100).toFixed(1)}%;background:${PCOLS[i%PCOLS.length]};"></div></div>
-        <div style="font-size:12px;color:var(--text3);margin-top:2px;">${fmtMoney(v.revenue)}원</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px;">${fmtMoneyFull(v.revenue)}</div>
       </div>`;
     });
     html+=`</div>`;
@@ -1042,7 +1042,7 @@ function renderSales(d,year,month){
         <div style="flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden;">
           <div style="width:${(v.profit/maxBP*100).toFixed(1)}%;height:100%;background:var(--green);border-radius:4px;"></div>
         </div>
-        <div style="min-width:50px;text-align:right;font-size:13px;font-weight:600;color:var(--green);">${fmtMoney(v.profit)}원</div>
+        <div style="min-width:70px;text-align:right;font-size:13px;font-weight:600;color:var(--green);">${fmtMoneyFull(v.profit)}</div>
       </div>`;
     });
     html+=`</div>`;
@@ -1059,11 +1059,11 @@ function renderSales(d,year,month){
     html+=`<div class="section-title">최근 거래</div>`;
     html+=d.rows.slice(0,20).map(row=>`
       <div class="entry">
-        <div class="entry-time"><b>${fmtMoney(row.revenue)}원</b>${row.date.slice(5)}</div>
+        <div class="entry-time"><b>${fmtMoneyFull(row.revenue)}</b>${row.date.slice(5)}</div>
         <div class="entry-body">
           <span class="entry-cat" style="background:${(CCOLS2[row.company]||'#888')}22;color:${CCOLS2[row.company]||'#888'};">${row.company.replace('아이리','')}</span>
           <div class="entry-text" style="font-size:13px;">${escH(row.product)}</div>
-          <div style="font-size:12px;color:var(--green);margin-top:2px;">순익 ${fmtMoney(row.profit)}원</div>
+          <div style="font-size:12px;color:var(--green);margin-top:2px;">순익 ${fmtMoneyFull(row.profit)}</div>
         </div>
       </div>`).join('');
   }

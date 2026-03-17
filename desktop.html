@@ -2472,9 +2472,7 @@ let salesCache = null;
 
 function fmtMoney(n) {
   if (!n && n !== 0) return '—';
-  if (Math.abs(n) >= 100000000) return (n/100000000).toFixed(1) + '억';
-  if (Math.abs(n) >= 10000) return Math.round(n/10000).toLocaleString() + '만';
-  return n.toLocaleString() + '원';
+  return (n||0).toLocaleString() + '원';
 }
 function fmtMoneyFull(n) {
   return (n||0).toLocaleString() + '원';

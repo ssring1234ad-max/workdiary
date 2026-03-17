@@ -87,7 +87,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Serif KR',serif;mi
 .form-group textarea{resize:vertical;min-height:60px;line-height:1.5;}
 .time-inputs{display:flex;gap:7px;align-items:center;}
 .time-sep{color:var(--text-dim);font-family:'DM Mono',monospace;font-size:13px;}
-input[type="time"]{width:96px;}
+#input-start,#input-end{width:96px;}
 input[type="date"]{width:136px;}
 .btn-submit{background:var(--accent);color:var(--bg);border:none;border-radius:var(--radius);padding:8px 20px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.08em;cursor:pointer;transition:opacity .15s;text-transform:uppercase;}
 .btn-submit:hover{opacity:.85;}
@@ -218,7 +218,7 @@ canvas{display:block;}
   /* Form rows wrap naturally */
   .form-row { flex-direction: column; gap: 10px; }
   .form-group input, .form-group select, .form-group textarea { font-size: 16px; } /* prevent iOS zoom */
-  input[type="time"] { width: 100%; }
+  #input-start, #input-end { width: 100%; }
   input[type="date"] { width: 100%; }
 
   /* Stats grids → 2 columns on mobile */
@@ -476,7 +476,7 @@ canvas{display:block;}
       <div class="form-group">
         <label>시작 ~ 종료</label>
         <div class="time-inputs">
-          <input type="time" id="input-start"><span class="time-sep">~</span><input type="time" id="input-end">
+          <input type="text" id="input-start" placeholder="09:00" maxlength="5" inputmode="numeric" oninput="fmtTimeInput(this)"><span class="time-sep">~</span><input type="text" id="input-end" placeholder="18:00" maxlength="5" inputmode="numeric" oninput="fmtTimeInput(this)">
         </div>
       </div>
       <div class="form-group">
@@ -1143,8 +1143,8 @@ function init(){
 /* ══ WORK ADD/DELETE ══ */
 function addEntry(){
   const date=document.getElementById('input-date').value;
-  const start=document.getElementById('input-start').value;
-  const end=document.getElementById('input-end').value;
+  const start=parseTimeVal(document.getElementById('input-start').value);
+  const end=parseTimeVal(document.getElementById('input-end').value);
   const category=document.getElementById('input-category').value;
   const content=document.getElementById('input-content').value.trim();
   if(!date||!start||!end){alert('날짜와 시간을 입력해주세요.');return;}
@@ -1156,8 +1156,8 @@ function addEntry(){
   saveData(data);
   if(getApiUrl()) sheetsUpsert('work_entries','id',newEntry);
   document.getElementById('input-content').value='';
-  document.getElementById('input-start').value=end;
-  document.getElementById('input-end').value=end;
+  document.getElementById('input-start').value=parseTimeVal(end);
+  document.getElementById('input-end').value=parseTimeVal(end);
   renderAll();
 }
 function deleteEntry(id){
@@ -2891,6 +2891,21 @@ function toggleMobileMore() {
 function closeMobileDrawer() {
   document.getElementById('mobile-drawer').classList.remove('open');
   document.getElementById('mobile-drawer-overlay').classList.remove('open');
+}
+
+/* ══ 시간 입력 자동 포맷 ══ */
+function fmtTimeInput(el) {
+  let v = el.value.replace(/[^0-9]/g, '');
+  if (v.length > 4) v = v.slice(0, 4);
+  if (v.length >= 3) v = v.slice(0,2) + ':' + v.slice(2);
+  el.value = v;
+}
+function parseTimeVal(v) {
+  v = (v||'').replace(/[^0-9:]/g, '');
+  if (v.includes(':')) return v;
+  if (v.length === 4) return v.slice(0,2) + ':' + v.slice(2);
+  if (v.length === 3) return '0' + v.slice(0,1) + ':' + v.slice(1);
+  return v;
 }
 
 /* ══ TOOLTIP ══ */

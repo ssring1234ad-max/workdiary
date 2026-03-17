@@ -285,9 +285,9 @@ canvas { display:block; width:100% !important; }
         <div class="input-group">
           <label class="input-label">시간</label>
           <div class="inp-row">
-            <input type="time" class="inp" id="w-start" style="flex:1;">
+            <input type="text" class="inp" id="w-start" style="flex:1;" placeholder="09:00" maxlength="5" inputmode="numeric" oninput="fmtTimeInput(this)">
             <span class="inp-sep">~</span>
-            <input type="time" class="inp" id="w-end" style="flex:1;">
+            <input type="text" class="inp" id="w-end" style="flex:1;" placeholder="18:00" maxlength="5" inputmode="numeric" oninput="fmtTimeInput(this)">
           </div>
         </div>
         <div class="input-group">
@@ -605,6 +605,25 @@ function switchTab(tab){
   if(tab==='exercise') renderExercise();
 }
 
+/* ══ 시간 입력 자동 포맷 ══ */
+function fmtTimeInput(el) {
+  let v = el.value.replace(/[^0-9]/g, '');
+  if (v.length > 4) v = v.slice(0, 4);
+  if (v.length >= 3) {
+    v = v.slice(0, 2) + ':' + v.slice(2);
+  }
+  el.value = v;
+}
+
+function parseTimeVal(v) {
+  // HH:MM 또는 HHMM 형식 모두 허용
+  v = v.replace(/[^0-9:]/g, '');
+  if (v.includes(':')) return v;
+  if (v.length === 4) return v.slice(0,2) + ':' + v.slice(2);
+  if (v.length === 3) return '0' + v.slice(0,1) + ':' + v.slice(1);
+  return v;
+}
+
 /* ══ 초기화 ══ */
 function init(){
   const now = new Date();
@@ -760,8 +779,8 @@ function toggleHomeTop3(date, key){
 
 function addWork(){
   const date=document.getElementById('w-date').value;
-  const start=document.getElementById('w-start').value;
-  const end=document.getElementById('w-end').value;
+  const start=parseTimeVal(document.getElementById('w-start').value);
+  const end=parseTimeVal(document.getElementById('w-end').value);
   const cat=document.getElementById('w-cat').value;
   const content=document.getElementById('w-content').value.trim();
   if(!date||!start||!end){toast('날짜와 시간을 입력해주세요');return;}
@@ -771,8 +790,8 @@ function addWork(){
   const data=loadWork(); data.push(rec); saveWork(data);
   if(getApi()) sheetsUpsert('work_entries','id',rec);
   document.getElementById('w-content').value='';
-  document.getElementById('w-start').value=end;
-  document.getElementById('w-end').value=end;
+  document.getElementById('w-start').value=parseTimeVal(end);
+  document.getElementById('w-end').value=parseTimeVal(end);
   toast('✓ 저장됐어요');
   renderHome();
 }

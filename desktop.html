@@ -2435,14 +2435,7 @@ function setSyncSpinner(on){
   if(lbl) lbl.textContent = on ? '동기화 중...' : (getApiUrl()?'Sheets 연동 중':'로컬 저장 중');
 }
 
-/* ── Sheets 연동 시 저장 함수 오버라이드 ── */
-// saveData, saveEx, saveDiary_data를 래핑
-const _origSaveData = saveData;
-function saveData(d){
-  _origSaveData(d);
-  // 마지막으로 변경된 항목만 upsert (전체 배열에서 가장 최근 항목)
-  // 실제로는 addEntry/deleteEntry에서 직접 호출
-}
+/* ── Sheets 연동은 addEntry/deleteEntry에서 직접 호출 ── */
 
 /* ── 앱 시작 시 Sheets에서 로드 ── */
 async function initSheets(){

@@ -883,7 +883,7 @@ function loadEx(){ return JSON.parse(localStorage.getItem('exercise_log_v1')||'[
 function saveEx(d){ localStorage.setItem('exercise_log_v1',JSON.stringify(d)); }
 
 /* ══ DATE UTILS ══ */
-function toDateStr(d){ return d.toISOString().slice(0,10); }
+function toDateStr(d){ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${dd}`; }
 function toTimeStr(d){ return d.toTimeString().slice(0,5); }
 function parseDate(s){ return new Date(s+'T00:00:00'); }
 function formatDate(d){ return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`; }

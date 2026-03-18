@@ -567,7 +567,7 @@ const saveDiary_= d => SS('diary_v1', d);
 const getApi   = () => localStorage.getItem('sheets_api_url') || '';
 
 /* ══ 날짜 ══ */
-const toDate = d => d.toISOString().slice(0,10);
+const toDate = d => { const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${dd}`; };
 const toTime = d => d.toTimeString().slice(0,5);
 const parseD = s => new Date(s+'T00:00:00');
 const fmtD   = d => `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;

@@ -2354,7 +2354,7 @@ async function testApiUrl(){
   if(!url){ res.textContent='URL을 입력해주세요.'; return; }
   res.textContent='테스트 중...'; res.style.color='var(--text-muted)';
   try{
-    const r = await fetch(url+'?action=getAll');
+    const r = await fetch(url+'?action=getAll', {redirect:'follow'});
     const d = await r.json();
     if(d.error){ res.textContent='❌ 오류: '+d.error; res.style.color='var(--danger)'; }
     else{ res.textContent='✓ 연결 성공! 업무 '+d.work.length+'건, 일기 '+d.diary.length+'건'; res.style.color='var(--accent2)'; }
@@ -2367,7 +2367,7 @@ async function loadFromSheets(){
   if(!url) return false;
   setSyncSpinner(true);
   try{
-    const r = await fetch(url+'?action=getAll');
+    const r = await fetch(url+'?action=getAll', {redirect:'follow'});
     const d = await r.json();
     if(d.error) throw new Error(d.error);
     // work
@@ -2394,11 +2394,8 @@ async function sheetsUpsert(sheet, key, record){
   const url = getApiUrl();
   if(!url) return;
   try{
-    await fetch(url, {
-      method:'POST',
-      body: JSON.stringify({action:'upsert', sheet, key, record}),
-      headers:{'Content-Type':'application/json'}
-    });
+    const params=new URLSearchParams({action:'upsert',sheet,key,record:JSON.stringify(record)});
+    await fetch(url+'?'+params.toString());
   }catch(e){ console.error('Sheets upsert error:', e); }
 }
 
@@ -2407,11 +2404,8 @@ async function sheetsDelete(sheet, key, keyValue){
   const url = getApiUrl();
   if(!url) return;
   try{
-    await fetch(url, {
-      method:'POST',
-      body: JSON.stringify({action:'delete', sheet, key, keyValue:String(keyValue)}),
-      headers:{'Content-Type':'application/json'}
-    });
+    const params=new URLSearchParams({action:'delete',sheet,key,keyValue:String(keyValue)});
+    await fetch(url+'?'+params.toString());
   }catch(e){ console.error('Sheets delete error:', e); }
 }
 
@@ -2425,11 +2419,8 @@ async function migrateLocalToSheets(){
   const exercise = JSON.parse(localStorage.getItem('exercise_log_v1')||'[]');
   const diary = JSON.parse(localStorage.getItem('diary_v1')||'[]');
   try{
-    const r = await fetch(url, {
-      method:'POST',
-      body: JSON.stringify({action:'saveAll', work, exercise, diary}),
-      headers:{'Content-Type':'application/json'}
-    });
+    const params=new URLSearchParams({action:'saveAll',work:JSON.stringify(work),exercise:JSON.stringify(exercise),diary:JSON.stringify(diary)});
+    const r = await fetch(url+'?'+params.toString());
     const d = await r.json();
     if(d.error) throw new Error(d.error);
     localStorage.setItem(API_URL_KEY, url);
@@ -2510,7 +2501,7 @@ async function loadSalesData() {
     if (year)  url += '&year='  + year;
     if (month) url += '&month=' + month;
 
-    const r = await fetch(url);
+    const r = await fetch(url, {redirect:'follow'});
     const d = await r.json();
 
     if (d.error) throw new Error(d.error);

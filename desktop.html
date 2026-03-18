@@ -876,6 +876,8 @@ let historyTab='week', exMonthOffset=0;
 let selectedExStatus='done'; // default for today
 
 /* ══ STORAGE ══ */
+function fixDate(v){if(!v)return'';const s=String(v);if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s;const d=new Date(s);if(!isNaN(d.getTime())){const k=new Date(d.getTime()+9*60*60*1000);const y=k.getUTCFullYear(),m=String(k.getUTCMonth()+1).padStart(2,'0'),dd=String(k.getUTCDate()).padStart(2,'0');return y+'-'+m+'-'+dd;}return s;}
+function fixTime(v){if(!v)return'';const s=String(v);if(/^\d{2}:\d{2}$/.test(s))return s;const d=new Date(s);if(!isNaN(d.getTime()))return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');return s;}
 function loadData(){ return JSON.parse(localStorage.getItem('work_diary_v1')||'[]'); }
 function saveData(d){ localStorage.setItem('work_diary_v1',JSON.stringify(d)); }
 // exercise: { date:'2025-01-01', status:'done'|'skip'|'holiday'|'rest', memo:'' }
@@ -965,7 +967,7 @@ function saveDiary(){
   };
   const existing = loadDiary().find(e=>e.date===date);
   if(existing) rec.checks = existing.checks || {};
-  const data = loadDiary().filter(e=>e.date!==date);
+  const data = loadDiary().filter(e=>String(e.date)!==String(date));
   data.push(rec);
   saveDiary_data(data);
   if(getApiUrl()){ const sheetRec=Object.assign({},rec); if(sheetRec.checks) sheetRec.checks=JSON.stringify(sheetRec.checks); sheetsUpsert('diary','date',sheetRec); }
@@ -1163,7 +1165,7 @@ function addEntry(){
 }
 function deleteEntry(id){
   if(!confirm('이 기록을 삭제할까요?'))return;
-  saveData(loadData().filter(e=>e.id!==id));
+  saveData(loadData().filter(e=>String(e.id)!==String(id)));
   if(getApiUrl()) sheetsDelete('work_entries','id',id);
   renderAll();
 }
@@ -1179,7 +1181,7 @@ function setExStatus(status){
 
 function saveExEntry(){
   const today=toDateStr(new Date());
-  const data=loadEx().filter(e=>e.date!==today);
+  const data=loadEx().filter(e=>String(e.date)!==String(today));
   const rec={date:today,status:selectedExStatus};
   data.push(rec);
   saveEx(data);
@@ -1203,7 +1205,7 @@ function saveExPast(){
 
 function deleteExEntry(date){
   if(!confirm('이 기록을 삭제할까요?'))return;
-  saveEx(loadEx().filter(e=>e.date!==date));
+  saveEx(loadEx().filter(e=>String(e.date)!==String(date)));
   if(getApiUrl()) sheetsDelete('exercise_log','date',date);
   renderAll();
   initExToday();
@@ -1319,7 +1321,7 @@ function updateSidebarEx(){
 /* ══ TODAY (WORK) ══ */
 function renderTodayTop3(){
   const today=toDateStr(new Date());
-  const map={}; loadDiary().forEach(e=>map[e.date]=e);
+  const map={}; loadDiary().forEach(e=>map[String(e.date)]=e);
   const rec=map[today];
   const wrap=document.getElementById('today-top3-wrap');
   const list=document.getElementById('today-top3-list');
@@ -1352,7 +1354,7 @@ function toggleTodayTop3(date,key){
 
 function renderToday(){
   const today=toDateStr(new Date());
-  const data=loadData().filter(e=>e.date===today).sort((a,b)=>a.start.localeCompare(b.start));
+  const data=loadData().filter(e=>String(e.date)===String(today)).sort((a,b)=>a.start.localeCompare(b.start));
   renderTodayTop3();
   document.getElementById('today-entries').innerHTML=data.length===0
     ?'<div class="empty-state">아직 오늘 기록이 없어요</div>'
@@ -1417,7 +1419,7 @@ function renderCatBarsEl(id,data){
 function renderHistory(){
   const data=loadData(),now=new Date();
   let filtered=data;
-  if(historyTab==='week') filtered=data.filter(e=>e.date>=toDateStr(getWeekStart(now)));
+  if(historyTab==='week') filtered=data.filter(e=>String(e.date)>=String(toDateStr(getWeekStart(now))));
   else if(historyTab==='month') filtered=data.filter(e=>{ const d=parseDate(e.date); return d>=getMonthStart(now); });
   const byDate=groupByDate(filtered);
   const dates=Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
@@ -2371,14 +2373,14 @@ async function loadFromSheets(){
     const d = await r.json();
     if(d.error) throw new Error(d.error);
     // work
-    if(d.work) localStorage.setItem('work_diary_v1', JSON.stringify(d.work));
+    if(d.work) localStorage.setItem('work_diary_v1', JSON.stringify(d.work.map(e=>({...e,date:fixDate(e.date),start:fixTime(e.start),end:fixTime(e.end),id:String(e.id)}))));
     // exercise
     if(d.exercise){
-      const exArr = d.exercise.map(e=>({date:e.date, status:e.status}));
+      const exArr = d.exercise.map(e=>({date:fixDate(e.date), status:e.status}));
       localStorage.setItem('exercise_log_v1', JSON.stringify(exArr));
     }
     // diary
-    if(d.diary) localStorage.setItem('diary_v1', JSON.stringify(d.diary));
+    if(d.diary) localStorage.setItem('diary_v1', JSON.stringify(d.diary.map(e=>({...e,date:fixDate(e.date)}))));
     setSyncSpinner(false);
     renderAll();
     return true;

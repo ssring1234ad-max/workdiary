@@ -557,6 +557,39 @@ const EX_GOAL = 0.8;
 
 /* ══ 스토리지 ══ */
 const LS = key => JSON.parse(localStorage.getItem(key)||'[]');
+
+// Sheets에서 불러온 날짜/시간 정규화
+function fixDate(v) {
+  if (!v) return '';
+  const s = String(v);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) {
+    const kst = new Date(d.getTime() + 9*60*60*1000);
+    const y=kst.getUTCFullYear(),m=String(kst.getUTCMonth()+1).padStart(2,'0'),dd=String(kst.getUTCDate()).padStart(2,'0');
+    return y+'-'+m+'-'+dd;
+  }
+  return s;
+}
+function fixTime(v) {
+  if (!v) return '';
+  const s = String(v);
+  if (/^\d{2}:\d{2}$/.test(s)) return s;
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) {
+    return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  }
+  return s;
+}
+function normalizeWork(arr) {
+  return arr.map(e => ({...e, date:fixDate(e.date), start:fixTime(e.start), end:fixTime(e.end), id:String(e.id)}));
+}
+function normalizeEx(arr) {
+  return arr.map(e => ({...e, date:fixDate(e.date)}));
+}
+function normalizeDiary(arr) {
+  return arr.map(e => ({...e, date:fixDate(e.date)}));
+}
 const SS = (key,v) => localStorage.setItem(key, JSON.stringify(v));
 const loadWork = () => LS('work_diary_v1');
 const saveWork = d => SS('work_diary_v1', d);
@@ -650,9 +683,9 @@ async function loadFromSheets(){
     const r=await fetch(url+'?action=getAll');
     const d=await r.json();
     if(d.error)throw new Error(d.error);
-    if(d.work) saveWork(d.work);
-    if(d.exercise) saveEx_(d.exercise.map(e=>({date:e.date,status:e.status})));
-    if(d.diary) saveDiary_(d.diary);
+    if(d.work) saveWork(normalizeWork(d.work));
+    if(d.exercise) saveEx_(normalizeEx(d.exercise.map(e=>({date:e.date,status:e.status}))));
+    if(d.diary) saveDiary_(normalizeDiary(d.diary));
     renderHome();
     toast('✓ 데이터 동기화 완료');
   }catch(e){ console.error(e); }
@@ -718,7 +751,7 @@ function updateConnectBanner(){
 /* ══ 홈 (오늘 업무) ══ */
 function renderHome(){
   const today=toDate(new Date());
-  const data=loadWork().filter(e=>e.date===today).sort((a,b)=>a.start.localeCompare(b.start));
+  const data=loadWork().filter(e=>String(e.date)===String(today)).sort((a,b)=>a.start.localeCompare(b.start));
   renderHomeTop3();
   const total=data.reduce((s,e)=>s+(Number(e.duration)||0),0);
   const pct=Math.min(Math.round(total/GOAL*100),100);
@@ -753,7 +786,7 @@ function renderHome(){
 function renderHomeTop3(){
   // 오늘 일기에서 TOP3 가져오기
   const today = toDate(new Date());
-  const map = {}; loadDiary().forEach(e=>map[e.date]=e);
+  const map = {}; loadDiary().forEach(e=>map[String(e.date)]=e);
   const rec = map[today];
   const wrap = document.getElementById('home-top3-wrap');
   const list = document.getElementById('home-top3-list');
@@ -805,7 +838,7 @@ function addWork(){
 
 function deleteWork(id){
   if(!confirm('삭제할까요?'))return;
-  saveWork(loadWork().filter(e=>e.id!==id));
+  saveWork(loadWork().filter(e=>String(e.id)!==String(id)));
   if(getApi()) sheetsDelete('work_entries','id',id);
   renderHome();
   toast('삭제됐어요');
@@ -827,10 +860,10 @@ function renderHistory(){
   let filtered=data;
   if(histTab==='week'){
     const ws=new Date(now); ws.setDate(ws.getDate()-ws.getDay()+1); ws.setHours(0,0,0,0);
-    filtered=data.filter(e=>e.date>=toDate(ws));
+    filtered=data.filter(e=>String(e.date)>=String(toDate(ws)));
   } else if(histTab==='month'){
     const ms=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-    filtered=data.filter(e=>e.date.startsWith(ms));
+    filtered=data.filter(e=>String(e.date).startsWith(ms));
   }
   const byDate={};
   filtered.forEach(e=>{(byDate[e.date]=byDate[e.date]||[]).push(e);});
@@ -878,7 +911,7 @@ function renderStats(){
   }).join('');
 
   const prefix=`${statsYear}-${String(statsMonth+1).padStart(2,'0')}`;
-  const monthData=data.filter(e=>e.date.startsWith(prefix));
+  const monthData=data.filter(e=>String(e.date).startsWith(prefix));
   const dim=new Date(statsYear,statsMonth+1,0).getDate();
   const days=Array.from({length:dim},(_,i)=>{
     const ds=`${statsYear}-${String(statsMonth+1).padStart(2,'0')}-${String(i+1).padStart(2,'0')}`;
@@ -1169,7 +1202,7 @@ function initDiary(){
   renderYesterdayTop3();
 }
 function loadDiaryForDate(date){
-  const map={}; loadDiary().forEach(e=>map[e.date]=e);
+  const map={}; loadDiary().forEach(e=>map[String(e.date)]=e);
   const rec=map[date];
   document.getElementById('d-win').value=rec?.win||'';
   document.getElementById('d-insight').value=rec?.insight||'';
@@ -1193,7 +1226,7 @@ function saveDiary(){
     checks:{}};
   const existing=loadDiary().find(e=>e.date===date);
   if(existing)rec.checks=existing.checks||{};
-  saveDiary_([...loadDiary().filter(e=>e.date!==date), rec]);
+  saveDiary_([...loadDiary().filter(e=>String(e.date)!==String(date)), rec]);
   if(getApi()){const sr=Object.assign({},rec);if(sr.checks)sr.checks=JSON.stringify(sr.checks);sheetsUpsert('diary','date',sr);}
   toast('✓ 일기 저장됐어요');
   renderYesterdayTop3();
@@ -1201,7 +1234,7 @@ function saveDiary(){
 function renderYesterdayTop3(){
   const yd=new Date();yd.setDate(yd.getDate()-1);
   const yds=toDate(yd);
-  const map={};loadDiary().forEach(e=>map[e.date]=e);
+  const map={};loadDiary().forEach(e=>map[String(e.date)]=e);
   const rec=map[yds];
   const wrap=document.getElementById('yesterday-top3-wrap');
   const list=document.getElementById('yesterday-top3-list');
@@ -1239,7 +1272,7 @@ function setEx(s){
 }
 function renderExercise(){
   const now=new Date();
-  const map={};loadEx().forEach(e=>map[e.date]=e);
+  const map={};loadEx().forEach(e=>map[String(e.date)]=e);
   const yr=now.getFullYear(),mo=now.getMonth();
   const dim=new Date(yr,mo+1,0).getDate();
 
@@ -1249,7 +1282,7 @@ function renderExercise(){
     const dt=new Date(yr,mo,d);
     const ds=toDate(dt);
     if(isWE(dt))continue;
-    const rec=map[ds];
+    const rec=map[String(ds)]||map[ds];
     if(rec&&rec.status==='holiday')continue;
     target++;
     if(rec&&rec.status==='done')done++;
@@ -1299,7 +1332,7 @@ function renderExCal(yr,mo,map){
   for(let d=1;d<=dim;d++){
     const dt=new Date(yr,mo,d);
     const ds=toDate(dt);
-    const rec=map[ds];
+    const rec=map[String(ds)]||map[ds];
     const isToday=ds===todayStr;
     const isWe=isWE(dt);
     let bg='transparent',color='var(--text3)',text=String(d);
@@ -1320,7 +1353,7 @@ function renderExCal(yr,mo,map){
 
 function exCalTap(date){
   document.getElementById('ex-past-date').value=date;
-  const map={};loadEx().forEach(e=>map[e.date]=e);
+  const map={};loadEx().forEach(e=>map[String(e.date)]=e);
   const rec=map[date];
   if(rec) document.getElementById('ex-past-status').value=rec.status;
   document.getElementById('ex-past-date').scrollIntoView({behavior:'smooth'});
@@ -1328,7 +1361,7 @@ function exCalTap(date){
 
 function saveEx(){
   const today=toDate(new Date());
-  const data=loadEx().filter(e=>e.date!==today);
+  const data=loadEx().filter(e=>String(e.date)!==String(today));
   const rec={date:today,status:selectedEx};
   data.push(rec);saveEx_(data);
   if(getApi())sheetsUpsert('exercise_log','date',rec);
@@ -1339,7 +1372,7 @@ function saveExPast(){
   const date=document.getElementById('ex-past-date').value;
   const status=document.getElementById('ex-past-status').value;
   if(!date)return;
-  const data=loadEx().filter(e=>e.date!==date);
+  const data=loadEx().filter(e=>String(e.date)!==String(date));
   const rec={date,status};
   data.push(rec);saveEx_(data);
   if(getApi())sheetsUpsert('exercise_log','date',rec);
